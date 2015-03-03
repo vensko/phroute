@@ -23,28 +23,32 @@ class RouteCollector implements RouteDataProviderInterface
 	/**
 	 * @var RouteParser
 	 */
-	private $routeParser;
-	/**
-	 * @var array
-	 */
-	private $filters = [];
-	/**
-	 * @var array
-	 */
-	private $staticRoutes = [];
-	/**
-	 * @var array
-	 */
-	private $regexToRoutesMap = [];
-	/**
-	 * @var array
-	 */
-	private $reverse = [];
+	protected $routeParser;
 
 	/**
 	 * @var array
 	 */
-	private $globalFilters = [];
+	protected $filters = [];
+	/**
+	 * @var array
+	 */
+	protected $staticRoutes = [];
+	/**
+	 * @var array
+	 */
+	protected $regexToRoutesMap = [];
+	/**
+	 * @var array
+	 */
+	protected $reverse = [];
+
+	/**
+	 * @var array
+	 */
+	protected $globalFilters = [];
+
+	protected $baseUrl = '';
+	protected $absoluteUrl = '';
 
 	/**
 	 * @param RouteParser $routeParser
@@ -55,28 +59,48 @@ class RouteCollector implements RouteDataProviderInterface
 	}
 
 	/**
+	 * @param string $path
+	 * @return $this
+	 */
+	public function setBaseUrl($url)
+	{
+		$this->baseUrl = $url;
+
+		return $this;
+	}
+
+	public function setAbsoluteUrl($url)
+	{
+		$this->absoluteUrl = $url;
+
+		return $this;
+	}
+
+	/**
 	 * @param $name
 	 * @param array $args
 	 * @return string
 	 */
-	public function route($name, array $args = [])
+	public function route($name, array $args = [], $absolute = false)
 	{
-		$url = [];
+		$url = $absolute ? $this->absoluteUrl.$this->baseUrl.'/' : $this->baseUrl.'/';
 
-		foreach ($this->reverse[$name] as $part) {
+		foreach ($this->reverse[$name] as $name => $part) {
 			if (!$part['variable']) {
-				$url[] = $part['value'];
-			} else if (isset($args[$part['name']])) {
-				if ($part['optional']) {
-					$url[] = '/';
-				}
-				$url[] = $args[$part['name']];
-			} elseif (!$part['optional']) {
-				throw new BadRouteException("Expecting route variable '{$part['name']}'");
+				$url .= $part['value'];
+			} else if (isset($args[$name])) {
+				$url .= $args[$name];
+			} else if (!$part['optional']) {
+				throw new BadRouteException("Expecting route variable '{$name}'");
 			}
 		}
 
-		return implode('', $url);
+		$url = rtrim($url, '/');
+		while (strpos($url, '//') !== false) {
+			$url = str_replace('//', '/', $url);
+		}
+
+		return $url;
 	}
 
 	/**
@@ -114,7 +138,7 @@ class RouteCollector implements RouteDataProviderInterface
 	 * @param $handler
 	 * @param $filters
 	 */
-	private function addStaticRoute($httpMethod, $routeData, $handler, $filters)
+	protected function addStaticRoute($httpMethod, $routeData, $handler, $filters)
 	{
 		$routeStr = $routeData[0];
 
@@ -137,7 +161,7 @@ class RouteCollector implements RouteDataProviderInterface
 	 * @param $handler
 	 * @param $filters
 	 */
-	private function addVariableRoute($httpMethod, $routeData, $handler, $filters)
+	protected function addVariableRoute($httpMethod, $routeData, $handler, $filters)
 	{
 		list($regex, $variables) = $routeData;
 
@@ -285,7 +309,7 @@ class RouteCollector implements RouteDataProviderInterface
 	 * @param ReflectionMethod $method
 	 * @return string
 	 */
-	private function buildControllerParameters(ReflectionMethod $method)
+	protected function buildControllerParameters(ReflectionMethod $method)
 	{
 		$params = '';
 
@@ -300,7 +324,7 @@ class RouteCollector implements RouteDataProviderInterface
 	 * @param $string
 	 * @return string
 	 */
-	private function camelCaseToDashed($string)
+	protected function camelCaseToDashed($string)
 	{
 		return strtolower(preg_replace('/([A-Z])/', '-$1', lcfirst($string)));
 	}
@@ -336,7 +360,7 @@ class RouteCollector implements RouteDataProviderInterface
 	/**
 	 * @return array
 	 */
-	private function generateVariableRouteData()
+	protected function generateVariableRouteData()
 	{
 		$chunkSize = $this->computeChunkSize(count($this->regexToRoutesMap));
 		$chunks = array_chunk($this->regexToRoutesMap, $chunkSize, true);
@@ -348,7 +372,7 @@ class RouteCollector implements RouteDataProviderInterface
 	 * @param $count
 	 * @return float
 	 */
-	private function computeChunkSize($count)
+	protected function computeChunkSize($count)
 	{
 		$numParts = max(1, round($count / self::APPROX_CHUNK_SIZE));
 
@@ -359,7 +383,7 @@ class RouteCollector implements RouteDataProviderInterface
 	 * @param $regexToRoutesMap
 	 * @return array
 	 */
-	private function processChunk($regexToRoutesMap)
+	protected function processChunk($regexToRoutesMap)
 	{
 		$routeMap = [];
 		$regexes = [];

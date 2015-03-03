@@ -36,22 +36,31 @@ class RouteParser
 	 */
 	const DEFAULT_DISPATCH_REGEX = '[^/]+';
 
-	private $parts;
+	/**
+	 * @var array
+	 */
+	protected $parts = [];
 
-	private $reverseParts;
+	/**
+	 * @var array
+	 */
+	protected $reverseParts = [];
 
-	private $partsCounter;
+	/**
+	 * @var int
+	 */
+	protected $partsCounter = 0;
 
-	private $variables;
+	protected $variables = [];
 
-	private $regexOffset;
+	protected $regexOffset = 0;
 
 	/**
 	 * Handy parameter type restrictions.
 	 *
 	 * @var array
 	 */
-	private $regexShortcuts = [
+	protected $regexShortcuts = [
 		':i}' => ':[0-9]+}',
 		':a}' => ':[0-9A-Za-z]+}',
 		':h}' => ':[0-9A-Fa-f]+}',
@@ -99,8 +108,7 @@ class RouteParser
 
 			$this->reverseParts[$set[1][0]] = [
 				'variable' => true,
-				'optional' => $isOptional,
-				'name' => $set[1][0]
+				'optional' => $isOptional
 			];
 
 			$this->parts[$this->partsCounter++] = $match;
@@ -114,7 +122,7 @@ class RouteParser
 	/**
 	 * Reset the parser ready for the next route.
 	 */
-	private function reset()
+	protected function reset()
 	{
 		$this->parts = [];
 
@@ -133,7 +141,7 @@ class RouteParser
 	 * @param $route
 	 * @return mixed
 	 */
-	private function extractVariableRouteParts($route)
+	protected function extractVariableRouteParts($route)
 	{
 		if (preg_match_all(self::VARIABLE_REGEX, $route, $matches, PREG_OFFSET_CAPTURE | PREG_SET_ORDER)) {
 			return $matches;
@@ -144,7 +152,7 @@ class RouteParser
 	 * @param $route
 	 * @param $nextOffset
 	 */
-	private function staticParts($route, $nextOffset)
+	protected function staticParts($route, $nextOffset)
 	{
 		$static = preg_split('~(/)~u', substr($route, $this->regexOffset, $nextOffset - $this->regexOffset), 0, PREG_SPLIT_DELIM_CAPTURE);
 
@@ -167,7 +175,7 @@ class RouteParser
 	/**
 	 * @param $varName
 	 */
-	private function validateVariable($varName)
+	protected function validateVariable($varName)
 	{
 		if (isset($this->variables[$varName])) {
 			throw new BadRouteException("Cannot use the same placeholder '$varName' twice");
@@ -180,7 +188,7 @@ class RouteParser
 	 * @param $match
 	 * @return string
 	 */
-	private function makeOptional($match)
+	protected function makeOptional($match)
 	{
 		$previous = $this->partsCounter - 1;
 
@@ -196,7 +204,7 @@ class RouteParser
 	 * @param $part
 	 * @return string
 	 */
-	private function quote($part)
+	protected function quote($part)
 	{
 		return preg_quote($part, '~');
 	}
