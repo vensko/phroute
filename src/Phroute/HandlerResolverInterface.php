@@ -1,13 +1,12 @@
 <?php namespace Phroute\Phroute;
 
-interface HandlerResolverInterface {
-	
+interface HandlerResolverInterface
+{
 	/**
 	 * Create an instance of the given handler.
 	 *
 	 * @param $handler
 	 * @return array
 	 */
-	
-	public function resolve($handler);
+	public function execute($handler, array $vars = []);
 }
